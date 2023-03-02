@@ -1,13 +1,14 @@
 use std::env;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 #[derive(Clone)]
 struct Train {
     dirc: Vec<i8>,
     futr_dirc: Vec<i8>,
     pos: Vec<usize>,
+    ignore: bool,
 }
 
 fn read_file(filename: &str) -> io::Result<Vec<String>> {
@@ -26,7 +27,7 @@ fn check_ext(filename: &str) {
     }
 }
 
-fn find_stations(code: Vec<String>, symbol: char) -> Vec<Vec<usize>> {
+fn find_stations(code: &Vec<String>, symbol: char) -> Vec<Vec<usize>> {
     let mut stations: Vec<Vec<usize>> = Vec::new();
     let mut row = 0;
     for rows in code {
@@ -46,9 +47,9 @@ fn find_stations(code: Vec<String>, symbol: char) -> Vec<Vec<usize>> {
     stations // 0 = x, 1 = y
 }
 
-fn check_crashed(trains: &mut Vec<Train>) -> &Vec<Train> {
+fn check_crashed(mut trains: Vec<Train>) -> (i32, Vec<Train>) {
     let mut positions = vec![];
-    for train in &mut *trains {
+    for train in &trains {
         positions.push(train.pos.clone());
     }
     positions.sort();
@@ -63,7 +64,6 @@ fn check_crashed(trains: &mut Vec<Train>) -> &Vec<Train> {
         }
         i = i + 1;
     }
-    let crash_num = crashed.len() as i32;
     crashed.sort();
     crashed.dedup();
     i = 0;
@@ -75,13 +75,73 @@ fn check_crashed(trains: &mut Vec<Train>) -> &Vec<Train> {
             }
         }
     }
-    trains
+    (trains.len() as i32, trains)
 }
 
-fn operators(train: &mut Train, opr: char) -> &Train {
-    match opr {
-        '^' => train.futr_dirc[1] = 1,
+fn turn_dirc(mut dirc: Vec<i8>) -> Vec<i8> {
+    for i in 0..dirc.len() - 1 {
+        dirc[i] = dirc[i] * -1;
     }
+    dirc
+}
+
+fn move_pos(mut pos: Vec<usize>, dirc: &Vec<i8>) -> Vec<usize> {
+    for i in 0..dirc.len() - 1 {
+        pos[i] = pos[i] + dirc[i] as usize;
+    }
+    pos
+}
+
+fn get_opr(code: &Vec<String>, pos: &Vec<usize>) -> char {
+    code[pos[1]].chars().nth(pos[0]).unwrap()
+}
+
+fn operators(
+    train: &Train,
+    opr: &char,
+    mut cell_pos: usize,
+    mut cells: Vec<u8>,
+) -> (Train, Vec<u8>, usize) {
+    let mut this_train = train.clone();
+    if opr.to_owned() == '|' || opr.to_owned() == '-' {
+        return (this_train, cells, cell_pos);
+    } else if this_train.ignore == true {
+        this_train.ignore = false;
+        return (this_train, cells, cell_pos);
+    }
+    match opr {
+        '^' => this_train.futr_dirc = vec![0, 1],
+        'v' => this_train.futr_dirc = vec![0, -1],
+        '>' => this_train.futr_dirc = vec![1, 0],
+        '<' => this_train.futr_dirc = vec![-1, 0],
+        'o' => this_train.dirc = this_train.futr_dirc.clone(),
+        '+' => {
+            if this_train.dirc[0] != 0 {
+                cell_pos = cell_pos + this_train.dirc[0] as usize;
+            } else {
+                cells[cell_pos] = cells[cell_pos] + this_train.dirc[1] as u8;
+            }
+        }
+        '.' => println!("{}", cells[cell_pos] as char),
+        ',' => {
+            cells[cell_pos] = std::io::stdin()
+                .bytes()
+                .next()
+                .and_then(|result| result.ok())
+                .map(|byte| byte as u8)
+                .unwrap()
+        }
+        '!' => {
+            if cells[cell_pos] == 0 {
+                this_train.ignore = true;
+            }
+        }
+
+        _ => {
+            this_train.dirc = turn_dirc(this_train.dirc);
+        }
+    }
+    (this_train, cells, cell_pos)
 }
 
 fn main() -> io::Result<()> {
@@ -92,9 +152,8 @@ fn main() -> io::Result<()> {
     }
     check_ext(&args[1]);
     let code = read_file(&args[1])?;
-    let stations = find_stations(code, '+');
+    let stations = find_stations(&code, '+');
     let mut trains: Vec<Train> = Vec::new();
-    let mut trains_num = stations.len() as i32;
     let dircs: Vec<Vec<i8>> = vec![vec![1, 0], vec![-1, 0], vec![0, 1], vec![0, -1]];
     for curr_station in &stations {
         let mut dirc_var = 0;
@@ -103,13 +162,25 @@ fn main() -> io::Result<()> {
                 dirc: dircs[dirc_var].clone(),
                 futr_dirc: dircs[dirc_var].clone(),
                 pos: curr_station.clone(),
+                ignore: false,
             });
             dirc_var = dirc_var + 1;
         }
     }
-    let cells: Vec<i8> = Vec::new();
+    let mut cell_pos: usize = 0;
+    let mut cells: Vec<u8> = Vec::new();
+    let mut trains_num = stations.len() as i32 * 4;
     while trains_num > 0 {
-        let trains = check_crashed(&mut trains);
+        for i in 0..trains_num - 1 {
+            println!("loop");
+            let train = trains[i as usize].clone();
+            trains[i as usize].pos = move_pos(train.pos.clone(), &train.dirc);
+            let oper = get_opr(&code, &train.pos);
+            (trains[i as usize], cells, cell_pos) =
+                operators(&train, &oper, cell_pos, cells.clone());
+        }
+        println!("Hi");
+        (trains_num, trains) = check_crashed(trains);
     }
     Ok(())
 }
