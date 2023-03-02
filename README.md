@@ -1,5 +1,5 @@
 # trainfck
-work in process ⚡ not usable yet ⚡ \
+work in process ⚡ not usable yet ⚡  
 
 [esolangs.org wiki page](https://esolangs.org/wiki/Trainfck)
 
@@ -12,11 +12,11 @@ cargo build
 ```
 ### run your code
 ```
-./trainf my-code.trainf
+./trainfck my-code.trainf
 ```
 ### docs
 File extension: .trainf \
-Trainfck is an esoteric programming language using a 2D map where trains run on rails. Trains depart from stations (+) and travel in all directions. There is no limitation on stations and therefore also not on trains.
+Trainfck is an esoteric programming inspired by brainfuck and railways. Trains depart from stations (+) and travel in all directions. There is no limitation on stations and therefore also not on trains.
 ```
          |  
          ⬆️  
@@ -38,7 +38,8 @@ cells:
 ------------
       ⬆️
 ```
-The pointer points on the 3 cell. This byte can be increased or decreased now. The cell pointer and the cell value is controlled by the direction where a train passes a station, all other operators are on the rails.
+The pointer points on the 3 cell. This byte can be increased or decreased now. The cell pointer and the cell value is controlled by the direction where a train passes a station, all other operators are on the rails. \
+There is no nil in trainfck. Empty cells have always the value 0.
 
 ### operators
 - “+” station
