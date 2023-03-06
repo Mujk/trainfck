@@ -55,10 +55,12 @@ fn check_crashed(mut trains: Vec<Train>) -> (i32, Vec<Train>) {
     positions.sort();
     let all_pos: Vec<Vec<usize>> = positions.clone();
     positions.dedup();
-    let mut i = 0;
+    println!("{:?}", positions);
+    let mut i = 1;
     let mut crashed = vec![];
     for pos in all_pos {
         if i < positions.len() && pos.eq(&positions[i]) {
+            println!("crash!, {:?}", pos);
             crashed.push(pos);
             continue;
         }
@@ -66,13 +68,14 @@ fn check_crashed(mut trains: Vec<Train>) -> (i32, Vec<Train>) {
     }
     crashed.sort();
     crashed.dedup();
-    i = 0;
     let loop_trains = trains.clone();
     for train in loop_trains {
+        i = 0;
         for crash in &crashed {
             if &train.pos == crash {
                 trains.remove(i);
             }
+            i = i + 1;
         }
     }
     (trains.len() as i32, trains)
@@ -86,14 +89,26 @@ fn turn_dirc(mut dirc: Vec<i8>) -> Vec<i8> {
 }
 
 fn move_pos(mut pos: Vec<usize>, dirc: &Vec<i8>) -> Vec<usize> {
-    for i in 0..dirc.len() - 1 {
-        pos[i] = pos[i] + dirc[i] as usize;
+    for i in 0..dirc.len() {
+        pos[i] = (pos[i] as i32 + dirc[i] as i32) as usize;
     }
     pos
 }
 
 fn get_opr(code: &Vec<String>, pos: &Vec<usize>) -> char {
     code[pos[1]].chars().nth(pos[0]).unwrap()
+}
+
+fn change_cell(mut cell_pos: i16, mut cells: Vec<u8>) -> (usize, Vec<u8>) {
+    if cell_pos == 0 {
+        cell_pos = 255;
+    } else if cell_pos == 255 {
+        cell_pos = 0;
+    }
+    while cell_pos as i16 - cells.len() as i16 > 0 {
+        cells.push(0);
+    }
+    (cell_pos as usize, cells)
 }
 
 fn operators(
@@ -105,10 +120,12 @@ fn operators(
     let mut this_train = train.clone();
     if opr.to_owned() == '|' || opr.to_owned() == '-' {
         return (this_train, cells, cell_pos);
-    } else if this_train.ignore == true {
+    }
+    if this_train.ignore == true {
         this_train.ignore = false;
         return (this_train, cells, cell_pos);
     }
+    println!("{:?}: {}", train.pos, opr);
     match opr {
         '^' => this_train.futr_dirc = vec![0, 1],
         'v' => this_train.futr_dirc = vec![0, -1],
@@ -117,7 +134,7 @@ fn operators(
         'o' => this_train.dirc = this_train.futr_dirc.clone(),
         '+' => {
             if this_train.dirc[0] != 0 {
-                cell_pos = cell_pos + this_train.dirc[0] as usize;
+                (cell_pos, cells) = change_cell(cell_pos as i16 + this_train.dirc[0] as i16, cells);
             } else {
                 cells[cell_pos] = cells[cell_pos] + this_train.dirc[1] as u8;
             }
@@ -136,10 +153,7 @@ fn operators(
                 this_train.ignore = true;
             }
         }
-
-        _ => {
-            this_train.dirc = turn_dirc(this_train.dirc);
-        }
+        _ => this_train.dirc = turn_dirc(this_train.dirc),
     }
     (this_train, cells, cell_pos)
 }
@@ -168,18 +182,17 @@ fn main() -> io::Result<()> {
         }
     }
     let mut cell_pos: usize = 0;
-    let mut cells: Vec<u8> = Vec::new();
+    let mut cells: Vec<u8> = vec![0];
     let mut trains_num = stations.len() as i32 * 4;
     while trains_num > 0 {
-        for i in 0..trains_num - 1 {
-            println!("loop");
-            let train = trains[i as usize].clone();
-            trains[i as usize].pos = move_pos(train.pos.clone(), &train.dirc);
-            let oper = get_opr(&code, &train.pos);
+        println!("{}", trains_num);
+        for i in 0..trains_num {
+            trains[i as usize].pos =
+                move_pos(trains[i as usize].pos.clone(), &trains[i as usize].dirc);
+            let opr = get_opr(&code, &trains[i as usize].pos.clone());
             (trains[i as usize], cells, cell_pos) =
-                operators(&train, &oper, cell_pos, cells.clone());
+                operators(&trains[i as usize], &opr, cell_pos, cells.clone());
         }
-        println!("Hi");
         (trains_num, trains) = check_crashed(trains);
     }
     Ok(())
