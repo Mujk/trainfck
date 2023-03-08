@@ -1,9 +1,11 @@
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use std::env;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Train {
     dirc: Vec<i8>,
     futr_dirc: Vec<i8>,
@@ -47,36 +49,33 @@ fn find_stations(code: &Vec<String>, symbol: char) -> Vec<Vec<usize>> {
     stations // 0 = x, 1 = y
 }
 
+fn remove_crashed(mut trains: Vec<Train>, pos: &Vec<usize>) -> Vec<Train> {
+    let mut i = 0;
+    for train in trains.clone() {
+        if train.pos.eq(pos) {
+            trains.remove(i);
+            continue;
+        }
+        i = i + 1;
+    }
+    trains
+}
+
 fn check_crashed(mut trains: Vec<Train>) -> (i32, Vec<Train>) {
     let mut positions = vec![];
     for train in &trains {
         positions.push(train.pos.clone());
     }
     positions.sort();
-    let all_pos: Vec<Vec<usize>> = positions.clone();
-    positions.dedup();
-    println!("{:?}", positions);
-    let mut i = 1;
-    let mut crashed = vec![];
-    for pos in all_pos {
-        if i < positions.len() && pos.eq(&positions[i]) {
-            println!("crash!, {:?}", pos);
-            crashed.push(pos);
-            continue;
+    let mut i: usize = 1;
+    for pos in &positions {
+        if i == positions.len() {
+            break;
+        }
+        if pos.eq(&positions[i]) {
+            trains = remove_crashed(trains, &pos);
         }
         i = i + 1;
-    }
-    crashed.sort();
-    crashed.dedup();
-    let loop_trains = trains.clone();
-    for train in loop_trains {
-        i = 0;
-        for crash in &crashed {
-            if &train.pos == crash {
-                trains.remove(i);
-            }
-            i = i + 1;
-        }
     }
     (trains.len() as i32, trains)
 }
@@ -125,10 +124,9 @@ fn operators(
         this_train.ignore = false;
         return (this_train, cells, cell_pos);
     }
-    println!("{:?}: {}", train.pos, opr);
     match opr {
-        '^' => this_train.futr_dirc = vec![0, 1],
-        'v' => this_train.futr_dirc = vec![0, -1],
+        '^' => this_train.futr_dirc = vec![0, -1],
+        'v' => this_train.futr_dirc = vec![0, 1],
         '>' => this_train.futr_dirc = vec![1, 0],
         '<' => this_train.futr_dirc = vec![-1, 0],
         'o' => this_train.dirc = this_train.futr_dirc.clone(),
@@ -158,6 +156,13 @@ fn operators(
     (this_train, cells, cell_pos)
 }
 
+fn rand_train(trains_num: i32) -> Vec<i32> {
+    let mut trains_order: Vec<i32> = (0..trains_num).map(|v| v).collect();
+    let mut rng = thread_rng();
+    trains_order.shuffle(&mut rng);
+    trains_order
+}
+
 fn main() -> io::Result<()> {
     #[allow(unused)]
     let args: Vec<String> = env::args().collect();
@@ -185,8 +190,8 @@ fn main() -> io::Result<()> {
     let mut cells: Vec<u8> = vec![0];
     let mut trains_num = stations.len() as i32 * 4;
     while trains_num > 0 {
-        println!("{}", trains_num);
-        for i in 0..trains_num {
+        let trains_order = rand_train(trains_num);
+        for i in trains_order {
             trains[i as usize].pos =
                 move_pos(trains[i as usize].pos.clone(), &trains[i as usize].dirc);
             let opr = get_opr(&code, &trains[i as usize].pos.clone());
