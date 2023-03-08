@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Train {
     dirc: Vec<i8>,
     futr_dirc: Vec<i8>,
@@ -81,9 +81,8 @@ fn check_crashed(mut trains: Vec<Train>) -> (i32, Vec<Train>) {
 }
 
 fn turn_dirc(mut dirc: Vec<i8>) -> Vec<i8> {
-    for i in 0..dirc.len() - 1 {
-        dirc[i] = dirc[i] * -1;
-    }
+    dirc[0] = dirc[0] * -1;
+    dirc[1] = dirc[1] * -1;
     dirc
 }
 
@@ -95,19 +94,26 @@ fn move_pos(mut pos: Vec<usize>, dirc: &Vec<i8>) -> Vec<usize> {
 }
 
 fn get_opr(code: &Vec<String>, pos: &Vec<usize>) -> char {
-    code[pos[1]].chars().nth(pos[0]).unwrap()
+    if pos[1] >= code.len() || pos[0] >= code[pos[1]].len() {
+        ' '
+    } else {
+        code[pos[1]].chars().nth(pos[0]).unwrap()
+    }
 }
 
-fn change_cell(mut cell_pos: i16, mut cells: Vec<u8>) -> (usize, Vec<u8>) {
-    if cell_pos == 0 {
-        cell_pos = 255;
-    } else if cell_pos == 255 {
-        cell_pos = 0;
+fn change_val(val: u8, change: i8) -> u8 {
+    match val as i16 - change as i16 {
+        -1 => 255,
+        256 => 0,
+        _ => (val as i8 - change) as u8,
     }
-    while cell_pos as i16 - cells.len() as i16 > 0 {
+}
+
+fn change_cell(cell_pos: usize, mut cells: Vec<u8>) -> Vec<u8> {
+    while cell_pos - cells.len() > 0 {
         cells.push(0);
     }
-    (cell_pos as usize, cells)
+    cells
 }
 
 fn operators(
@@ -117,7 +123,18 @@ fn operators(
     mut cells: Vec<u8>,
 ) -> (Train, Vec<u8>, usize) {
     let mut this_train = train.clone();
-    if opr.to_owned() == '|' || opr.to_owned() == '-' {
+    if opr.to_owned() == '|' {
+        if this_train.dirc[1] == 0 {
+            this_train.dirc = turn_dirc(this_train.dirc);
+        }
+        return (this_train, cells, cell_pos);
+    } else if opr.to_owned() == '-' {
+        if this_train.dirc[0] == 0 {
+            this_train.dirc = turn_dirc(this_train.dirc);
+        }
+        return (this_train, cells, cell_pos);
+    } else if opr.to_owned() == ' ' {
+        this_train.dirc = turn_dirc(this_train.dirc);
         return (this_train, cells, cell_pos);
     }
     if this_train.ignore == true {
@@ -132,9 +149,10 @@ fn operators(
         'o' => this_train.dirc = this_train.futr_dirc.clone(),
         '+' => {
             if this_train.dirc[0] != 0 {
-                (cell_pos, cells) = change_cell(cell_pos as i16 + this_train.dirc[0] as i16, cells);
+                cell_pos = cell_pos + this_train.dirc[0] as usize;
+                cells = change_cell(cell_pos, cells);
             } else {
-                cells[cell_pos] = cells[cell_pos] + this_train.dirc[1] as u8;
+                cells[cell_pos] = change_val(cells[cell_pos], this_train.dirc[1]);
             }
         }
         '.' => println!("{}", cells[cell_pos] as char),
@@ -151,7 +169,7 @@ fn operators(
                 this_train.ignore = true;
             }
         }
-        _ => this_train.dirc = turn_dirc(this_train.dirc),
+        _ => panic!("Illegal operator \"{}\" at: {:?} ", opr, this_train.pos),
     }
     (this_train, cells, cell_pos)
 }
@@ -164,7 +182,6 @@ fn rand_train(trains_num: i32) -> Vec<i32> {
 }
 
 fn main() -> io::Result<()> {
-    #[allow(unused)]
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
         panic!("Expected 1 file, got {}", (args.len() - 1).to_string())
