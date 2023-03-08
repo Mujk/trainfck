@@ -1,9 +1,6 @@
 # trainfck
-work in process ⚡ not usable yet ⚡  
-
 [esolangs.org wiki page](https://esolangs.org/wiki/Trainfck)
-
-## language
+## docs
 ### installation
 ```
 git clone https://github.com/Mujk/trainfck.git
@@ -14,9 +11,10 @@ cargo build
 ```
 ./trainfck my-code.trainf
 ```
-### docs
+### instructions
 File extension: .trainf \
-Trainfck is a minimalistic esoteric programming language with trains. Trains depart from stations (+) and travel in all directions. There is no limitation on stations and therefore also not on trains. \
+Trainfck is a minimalistic brainfuck inspired esoteric programming language with trains.\
+Trains depart from stations (+) and travel in all directions. There is no limitation on stations and therefore also not on trains. \
 The code is basically a minimalistic rail network.
 ```
          |  
@@ -40,15 +38,11 @@ cells:
       ⬆️
 ```
 The pointer points on the 3 cell. This byte can be increased or decreased now. The cell pointer and the cell value is controlled by the direction in which a train passes a station, all other operators are on the rails. \
-There is no nil in trainfck. Empty cells always have the value 0.
+This interpreter uses ASCII encoding. Everything is saved as ASCII number.\
+Empty cells always have the value 0, which is null in ASCII.
 
 ### operators
-- “+” station:
-&emsp;* directions: 
-&emsp;* "⬆️" cell byte + 1
-&emsp;* "⬇️" cell byte - 1
-&emsp;* "➡️" cell pointer goes to next cell
-&emsp;* "⬅️" cell pointer goes to last cell
+- “+” station &#8594; directions: "⬆️" cell byte +1, "⬇️" cell byte -1, "➡️" cell pointer +1, "⬅️" cell pointer -1
 - “-” “|” rails, the train can only move on rails and operators, or they will turn around
 - “^” “v” “>” “<” changes direction at the next possible option
 - “!” ignores the next action if the current cells equals 0 
