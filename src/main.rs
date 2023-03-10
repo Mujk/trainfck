@@ -3,7 +3,7 @@ use rand::thread_rng;
 use std::env;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 
 #[derive(Clone)]
 struct Train {
@@ -161,12 +161,12 @@ fn operators(
         }
         '.' => println!("{}", cells[cell_pos] as char),
         ',' => {
-            cells[cell_pos] = std::io::stdin()
-                .bytes()
-                .next()
-                .and_then(|result| result.ok())
-                .map(|byte| byte as u8)
-                .unwrap()
+            let mut input = String::new();
+            std::io::stdin()
+                .read_line(&mut input)
+                .ok()
+                .expect("failed to read input");
+            cells[cell_pos] = input.bytes().nth(0).expect("failed to read byte");
         }
         '!' => {
             if cells[cell_pos] == 0 {
