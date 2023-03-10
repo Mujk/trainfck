@@ -168,8 +168,8 @@ fn operators(
                 .expect("failed to read input");
             cells[cell_pos] = input.bytes().nth(0).expect("failed to read byte");
         }
-        '!' => {
-            if cells[cell_pos] == 0 {
+        '?' => {
+            if cell_pos != 0 && cells[cell_pos] == cells[cell_pos - 1] {
                 this_train.ignore = true;
             }
         }
