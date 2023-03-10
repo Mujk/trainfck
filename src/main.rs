@@ -29,23 +29,29 @@ fn check_ext(filename: &str) {
     }
 }
 
+fn find_in_row(
+    y: usize,
+    row: &str,
+    symbol: &char,
+    stations: &mut Vec<Vec<usize>>,
+) -> Vec<Vec<usize>> {
+    let mut x = 0;
+    for chars in row.chars() {
+        if &chars == symbol {
+            stations.push(vec![x, y]);
+        }
+        x = x + 1;
+    }
+    stations.to_owned()
+}
+
 fn find_stations(code: &Vec<String>, symbol: char) -> Vec<Vec<usize>> {
     let mut stations: Vec<Vec<usize>> = Vec::new();
-    let mut row = 0;
-    for rows in code {
-        stations.push(
-            rows.chars()
-                .enumerate()
-                .filter(|(_, c)| *c == symbol)
-                .map(|(i, _)| i)
-                .collect::<Vec<_>>(),
-        );
-        if !stations[row].is_empty() {
-            stations[row].push(row);
-        }
-        row = row + 1;
+    let mut y = 0;
+    for row in code {
+        stations = find_in_row(y, row, &symbol, &mut stations);
+        y = y + 1;
     }
-    stations.retain(|x| !x.is_empty());
     stations // 0 = x, 1 = y
 }
 
@@ -159,7 +165,7 @@ fn operators(
                 cells[cell_pos] = change_val(cells[cell_pos], this_train.dirc[1]);
             }
         }
-        '.' => println!("{}", cells[cell_pos] as char),
+        '.' => print!("{}", cells[cell_pos] as char),
         ',' => {
             let mut input = String::new();
             std::io::stdin()
