@@ -37,7 +37,7 @@ cells:
 ------------
       ⬆️
 ```
-The pointer points on the 3 cell. This byte can be increased or decreased now. The cell pointer and the cell value is controlled by the direction in which a train passes a station, all other operators are on the rails. \
+The pointer points on the third cell. This byte can be increased or decreased now. The cell pointer and the cell value is controlled by the direction in which a train passes a station, all other operators are on the rails. \
 This interpreter uses ASCII encoding. Everything is saved as ASCII number.\
 Empty cells always have the value 0, which is null in ASCII.
 
@@ -45,7 +45,7 @@ Empty cells always have the value 0, which is null in ASCII.
 - “+” station &#8594; directions: "⬆️" cell byte +1, "⬇️" cell byte -1, "➡️" cell pointer +1, "⬅️" cell pointer -1
 - “-” “|” rails, the train can only move on rails and operators, or they will turn around
 - “^” “v” “>” “<” changes direction at the next possible option
-- “!” ignores the next action if the current cells equals 0 
+- “?” ignores the next action if the current cell equals the last cell 
 - “.” prints out the current cell
 - “,” takes input as value for the current cell
 - "o" change direction
