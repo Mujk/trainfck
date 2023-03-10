@@ -109,11 +109,15 @@ fn change_val(val: u8, change: i8) -> u8 {
     }
 }
 
-fn change_cell(cell_pos: usize, mut cells: Vec<u8>) -> Vec<u8> {
-    while cell_pos - cells.len() > 0 {
+fn change_cell(mut cell_pos: i32, mut cells: Vec<u8>, dirc_0: usize) -> (Vec<u8>, usize) {
+    cell_pos = cell_pos + dirc_0 as i32;
+    if cell_pos < 0 {
+        cells = [vec![0], cells].concat();
+        cell_pos = 0;
+    } else if cell_pos + 1 - cells.len() as i32 > 0 {
         cells.push(0);
     }
-    cells
+    (cells, cell_pos as usize)
 }
 
 fn operators(
@@ -149,8 +153,8 @@ fn operators(
         'o' => this_train.dirc = this_train.futr_dirc.clone(),
         '+' => {
             if this_train.dirc[0] != 0 {
-                cell_pos = cell_pos + this_train.dirc[0] as usize;
-                cells = change_cell(cell_pos, cells);
+                (cells, cell_pos) =
+                    change_cell(cell_pos as i32, cells, this_train.dirc[0] as usize);
             } else {
                 cells[cell_pos] = change_val(cells[cell_pos], this_train.dirc[1]);
             }
