@@ -175,7 +175,9 @@ fn operators(
             cells[cell_pos] = input.bytes().nth(0).expect("failed to read byte");
         }
         '?' => {
-            if cell_pos != 0 && cells[cell_pos] == cells[cell_pos - 1] {
+            if cell_pos != 0 && cells[cell_pos] == cells[cell_pos - 1]
+                || cell_pos == 0 && cells[255] == cells[0]
+            {
                 this_train.ignore = true;
             }
         }
