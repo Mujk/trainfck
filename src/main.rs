@@ -27,7 +27,7 @@ fn read_file(filename: &str) -> io::Result<Vec<String>> {
 
 fn check_extention(filename: &str) {
     let splitted: Vec<&str> = filename.split(".").collect();
-    if splitted[splitted.len() - 1] == ".trainf" {
+    if splitted[splitted.len() - 1] != "trainf" {
         panic!(
             "Expect a .trainf go a {} file",
             splitted[splitted.len() - 1]
@@ -126,20 +126,16 @@ fn change_cell(mut memory: Memory, direction_0: usize) -> Memory {
     if new_cell_position < 0 {
         memory.cells = [vec![0], memory.cells].concat();
         memory.position = 0;
-        return memory
+        return memory;
     }
-    memory.position = new_cell_position as usize; 
+    memory.position = new_cell_position as usize;
     if memory.position + 1 - memory.cells.len() > 0 {
         memory.cells.push(0);
     }
     memory
 }
 
-fn operators(
-    train: &Train,
-    operator: &char,
-    mut memory: Memory,
-) -> (Train, Memory) {
+fn operators(train: &Train, operator: &char, mut memory: Memory) -> (Train, Memory) {
     let mut this_train = train.clone();
     if operator.to_owned() == '|' {
         if this_train.direction[1] == 0 {
@@ -167,10 +163,10 @@ fn operators(
         'o' => this_train.direction = this_train.future_direction.clone(),
         '+' => {
             if this_train.direction[0] != 0 {
-                memory =
-                    change_cell(memory.clone(), this_train.direction[0] as usize);
+                memory = change_cell(memory.clone(), this_train.direction[0] as usize);
             } else {
-                memory.cells[memory.position] = change_value(memory.cells[memory.position], this_train.direction[1]);
+                memory.cells[memory.position] =
+                    change_value(memory.cells[memory.position], this_train.direction[1]);
             }
         }
         '.' => print!("{}", memory.cells[memory.position] as char),
@@ -183,13 +179,17 @@ fn operators(
             memory.cells[memory.position] = input.bytes().nth(0).expect("failed to read byte");
         }
         '?' => {
-            if memory.position != 0 && memory.cells[memory.position] == memory.cells[memory.position - 1]
+            if memory.position != 0
+                && memory.cells[memory.position] == memory.cells[memory.position - 1]
                 || memory.position == 0 && memory.cells[255] == memory.cells[0]
             {
                 this_train.skip = true;
             }
         }
-        _ => panic!("Illegal operator \"{}\" at: {:?} ", operator, this_train.position),
+        _ => panic!(
+            "Illegal operator \"{}\" at: {:?} ",
+            operator, this_train.position
+        ),
     }
     (this_train, memory)
 }
@@ -231,8 +231,10 @@ fn main() -> io::Result<()> {
     while trains_num > 0 {
         let trains_order = rand_train(trains_num);
         for i in trains_order {
-            trains[i as usize].position =
-                move_position(trains[i as usize].position.clone(), &trains[i as usize].direction);
+            trains[i as usize].position = move_position(
+                trains[i as usize].position.clone(),
+                &trains[i as usize].direction,
+            );
             let operator = get_operator(&code, &trains[i as usize].position.clone());
             (trains[i as usize], memory) =
                 operators(&trains[i as usize], &operator, memory.clone());
