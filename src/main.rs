@@ -4,6 +4,7 @@ use std::env;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
+use std::num::Wrapping;
 
 #[derive(Clone)]
 struct Train {
@@ -132,14 +133,14 @@ fn change_value(value: u8, change: i8) -> u8 {
 }
 
 fn change_cell(mut memory: Memory, direction_0: usize) -> Memory {
-    let new_cell_position = (memory.position + direction_0) as i32;
+    let new_cell_position = (Wrapping(memory.position) + Wrapping(direction_0)).0 as i32;
     if new_cell_position < 0 {
         memory.cells = [vec![0], memory.cells].concat();
         memory.position = 0;
         return memory;
     }
     memory.position = new_cell_position as usize;
-    if memory.position + 1 - memory.cells.len() > 0 {
+    if (Wrapping(memory.position + 1) - Wrapping(memory.cells.len())).0 > 0 {
         memory.cells.push(0);
     }
     memory
