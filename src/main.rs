@@ -7,7 +7,7 @@ use std::io::{BufRead, BufReader};
 
 #[derive(Clone)]
 struct Train {
-    direction: Vec<i8>,
+    direction: Vec<i8>, // 0 = x, 1 = y
     future_direction: Vec<i8>,
     position: Vec<usize>,
     skip: bool,
@@ -98,6 +98,16 @@ fn turn_direction(mut direction: Vec<i8>) -> Vec<i8> {
     direction
 }
 
+fn move_after_turn(direction: &Vec<i8>, mut position: Vec<usize>) -> Vec<usize> {
+    for _i in 0..2 {
+        position = move_position(
+                position.clone(),
+                direction,
+            );
+    }
+    position
+}
+
 fn move_position(mut position: Vec<usize>, direction: &Vec<i8>) -> Vec<usize> {
     for i in 0..direction.len() {
         position[i] = (position[i] as i32 + direction[i] as i32) as usize;
@@ -135,21 +145,26 @@ fn change_cell(mut memory: Memory, direction_0: usize) -> Memory {
     memory
 }
 
-fn operators(train: &Train, operator: &char, mut memory: Memory) -> (Train, Memory) {
+fn operators(train: &Train, mut operator: char, mut memory: Memory, code: Vec<String>) -> (Train, Memory) {
     let mut this_train = train.clone();
     if operator.to_owned() == '|' {
-        if this_train.direction[1] == 0 {
-            this_train.direction = turn_direction(this_train.direction);
+        if this_train.direction[1] != 0 {
+            return (this_train, memory);
         }
-        return (this_train, memory);
-    } else if operator.to_owned() == '-' {
-        if this_train.direction[0] == 0 {
-            this_train.direction = turn_direction(this_train.direction);
+        this_train.direction = turn_direction(this_train.direction.clone());
+        this_train.position = move_after_turn(&this_train.direction, this_train.position.clone());    
+        operator = get_operator(&code, &this_train.position);         
+        } else if operator.to_owned() == '-' {
+            if this_train.direction[0] != 0 {
+                return (this_train, memory);
         }
-        return (this_train, memory);
+        this_train.direction = turn_direction(this_train.direction.clone());
+        this_train.position = move_after_turn(&this_train.direction, this_train.position.clone());    
+        operator = get_operator(&code, &this_train.position);         
     } else if operator.to_owned() == ' ' {
-        this_train.direction = turn_direction(this_train.direction);
-        return (this_train, memory);
+        this_train.direction = turn_direction(this_train.direction.clone());
+        this_train.position = move_after_turn(&this_train.direction, this_train.position.clone());    
+        operator = get_operator(&code, &this_train.position);         
     }
     if this_train.skip == true {
         this_train.skip = false;
@@ -186,6 +201,7 @@ fn operators(train: &Train, operator: &char, mut memory: Memory) -> (Train, Memo
                 this_train.skip = true;
             }
         }
+        '|' | '-' => { return (this_train, memory); }  
         _ => panic!(
             "Illegal operator \"{}\" at: {:?} ",
             operator, this_train.position
@@ -237,7 +253,7 @@ fn main() -> io::Result<()> {
             );
             let operator = get_operator(&code, &trains[i as usize].position.clone());
             (trains[i as usize], memory) =
-                operators(&trains[i as usize], &operator, memory.clone());
+                operators(&trains[i as usize], operator, memory.clone(), code.clone());
         }
         (trains_num, trains) = check_crashed(trains);
     }
